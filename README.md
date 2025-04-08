@@ -1,71 +1,131 @@
-CPD Project - Final Report
+# CPD Project Final Report
+**CS 396 Causal Inference**
 
-Group Members
+## 1. Group Members
+Alina Chen, Yulan Guo, Qinyan Li, Haohan Shi
 
-Alina Chen
+## 2. Code and Documentation
+- `cpd_models.ipynb`: Contains our final backdoor estimator, bootstrapped confidence intervals, DoubleML model using random forest, and preliminary model with final finding as the outcome.
+- `cpd_synthetic_data.ipynb`: Includes code to generate synthetic data and compares expected vs. observed causal effects at sample sizes of 1,000, 10,000, and 100,000.
 
-Yulan Guo
+## 3. Estimation Implementation
+- Estimation code: Cell 27 in `cpd_models.ipynb`
+- Results: Cell 29
+- Bootstrap estimate code: Cell 30
 
-Qinyan Li
+We used backdoor estimation to isolate the causal effect of **rank** on **penalty_code** for sustained complaints, controlling for:
+- Race
+- Gender
+- Age
+- Allegation category
 
-Haohan Shi
+Each rank was modeled separately using logistic regression. Model parameters showed confounders had varying effects by rank, indicating flexibility in modeling nonlinear relationships.
 
-Code and Documentation
+## 4. Changes Since the Update
 
-Main Notebooks
+### 4.1 Additional Confounders
+- Replaced appointment date with age.
+- Added binary variable for allegation category (1 = violent, 0 = nonviolent).
+- Focused only on sustained complaints.
 
-cpd_models.ipynb: Contains our final backdoor estimator, the bootstrapped confidence intervals, our DoubleML model using random forest, and our preliminary model with final finding as the outcome.
+### 4.2 Bootstrap Confidence Intervals
+- 95% CIs for each rank’s penalization probability.
+- No overlap in intervals → statistically significant differences across ranks.
 
-cpd_synthetic_data.ipynb: Includes the code we used to generate our synthetic data and compares the expected and observed causal effect with a naive estimate at sample sizes of 1,000, 10,000, and 100,000.
+### 4.3 Complex Models
+- Used DoubleML from `econML`, tried `LassoCV` and `RandomForest`.
+- Grouped ranks into "low" (2–5) and "high" (6–10).
+- Found an average treatment effect (ATE) of -0.0938 (promotion → 9% decrease in penalization).
 
-Estimation Implementation
+### 4.4 IPW (Inverse Probability Weighting)
+- Estimated propensity scores with logistic regression.
+- Weighted samples to adjust for imbalanced confounders.
+- Trained separate models by rank.
 
-Backdoor Estimation (Cell 27 in cpd_models.ipynb): Isolates the causal effect of rank on penalization rates while controlling for confounding effects from race, gender, age, and allegation category.
+#### IPW Results
+| Rank                  | E[Y^a]            |
+|-----------------------|------------------|
+| Police Officer        | 0.8786           |
+| Field Training Officer| 0.7351           |
+| Detective             | 0.8327           |
+| Sergeant              | 0.8174           |
+| Lieutenant            | 0.5783           |
 
-Bootstrap Confidence Intervals (Cell 30 in cpd_models.ipynb): Verifies the statistical significance of our estimates using 95% confidence intervals.
+## 5. Interpreting Results
 
-DoubleML Model (Cell 28 in cpd_models.ipynb): Implements a DoubleML estimator from the econML library, using LassoCV and RandomForest models. Since handling multiclass treatments was challenging, we grouped ranks 2-5 into a "low" rank and 6-10 into a "high" rank.
+### Before
+| Rank                   | E[Y^a] |
+|------------------------|--------|
+| Police Officer         | 0.844  |
+| Field Training Officer | 0.763  |
+| Investigator           | 0.785  |
+| Detective              | 0.800  |
+| Sergeant               | 0.772  |
+| Lieutenant             | 0.663  |
+| Commander              | 0.484  |
 
-Model Assumptions
+### After (Final Estimation)
+| Rank                            | E[Y^a] |
+|----------------------------------|--------|
+| Police Officer                  | 0.819  |
+| Field Training Officer          | 0.636  |
+| Investigator/Detective          | 0.753  |
+| Sergeant                        | 0.728  |
+| Lieutenant                      | 0.662  |
+| Captain/Commander/Deputy Chief  | 0.479  |
 
-We assume:
+- Strong trend: higher rank → lower probability of punishment.
+- Police officers are 1.7x more likely to be penalized than high-ranking officers.
+- Notable exception: Field Training Officers (likely due to their unique role).
 
-Consistency - The treatment effect does not change based on unobserved variables.
+### Bootstrap CI Summary
+- Rank 2 (Police): CI = [0.818, 0.822]
+- Highest rank group: CI = [0.432, 0.530]
+- Despite wide CI in top ranks, difference is still statistically significant.
 
-Conditional Exchangeability - Given our confounders, rank is independent of potential outcomes.
+### Before vs. After
+- Results didn’t change much.
+- Bootstrap and confounder additions helped refine estimates.
+- Suggests race and gender remain dominant covariates in punishment prediction.
 
-No Unmeasured Confounding - All necessary confounders are included in the model.
+## 6. Synthetic Data
+- Generated synthetic binary data for race, gender.
+- Modeled "low" vs "high" rank and outcome with descending probability.
+- True causal effect = weight(high) - weight(low).
 
-Our counterfactual function is defined as:
+| Sample Size | Expected | Observed | Observed % Error | Naive | Naive % Error |
+|-------------|----------|----------|------------------|-------|----------------|
+| 1,000       | -0.144   | -0.179   | 0.243            | -0.101| 0.299          |
+| 10,000      | -0.168   | -0.166   | 0.0119           | -0.0958| 0.430         |
+| 100,000     | -0.151   | -0.149   | 0.0132           | -0.0771| 0.541         |
 
+Backdoor estimator consistently outperformed naive model, especially at larger sample sizes.
 
-where 
+## 7. Reflections
 
-Since we built separate models for each rank, the four model parameters represent the coefficients of the four confounders in our logistic regression model:
+### What was interesting?
+- Applying causal inference to real data provided depth and challenge.
+- Implemented class concepts (backdoor, IPW, bootstrap) in practice.
+- Explored DoubleML and DoWhy for model flexibility.
 
-Rank 2 (‘police officer’): [-0.170, 0.295, 0.539, -0.151]
+### What was difficult?
+- Parsing large and messy datasets.
+- Identifying a viable causal question with enough data to support it.
+- Handling multiple confounders and model tuning.
 
-Rank 8 (highest ranks combined): [-2.48, 0.156, -0.214, -0.224]
+### Unaddressed Challenges
+- Lacked variables like:
+  - Officer disciplinary history
+  - Complainant identity/info
+  - Rank-specific duties
+- Limited sample size and generalizability.
 
-Key Findings
+### What’s left to do?
+- Expand DoubleML to include more categorical confounders.
+- Explore additional models (hierarchical, neural nets).
+- Consider alternate outcomes (e.g., final finding).
+- Combine with qualitative research (e.g., interviews).
 
-Negative correlation between rank and penalization rate: Higher-ranked officers are less likely to be penalized.
-
-No overlapping confidence intervals: Indicates statistically significant differences in penalization likelihood across ranks.
-
-Model flexibility: Different confounder effects based on rank suggest our approach captures non-linear relationships.
-
-Changes Since Last Update
-
-Refined DAG: Replaced appointment date with age to better account for tenure effects and officer experience.
-
-Additional Confounders: Converted allegation category into a binary variable (1 for violent complaints, 0 for nonviolent).
-
-Added Bootstrap Confidence Intervals: Strengthened statistical validity of our results.
-
-Experimented with Complex Models: Implemented DoubleML to reduce categorical variable assumptions and experimented with different machine learning models.
-
-Conclusion
 
 This project provides a data-driven analysis of how rank influences penalization outcomes in sustained complaints. By leveraging causal inference techniques such as backdoor estimation and DoubleML, we ensure robust statistical insights while minimizing bias from confounding variables. Our findings suggest systemic disparities in disciplinary actions based on rank, highlighting the importance of accounting for structural factors in police accountability research.
 
