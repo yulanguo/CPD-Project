@@ -1,6 +1,5 @@
 **CS 396 Causal Inference**
 
-This project provides a data-driven analysis of how rank influences penalization outcomes in sustained complaints using CPD data. By leveraging causal inference techniques such as backdoor estimation and DoubleML, we ensure robust statistical insights while minimizing bias from confounding variables. Our findings suggest systemic disparities in disciplinary actions based on rank, highlighting the importance of accounting for structural factors in police accountability research.
+This project presents a data-driven analysis of how officer rank influences penalization outcomes in sustained complaints using Chicago Police Department (CPD) data. We formalized the causal structure using a directed acyclic graph (DAG), applied binary logistic regression to adjust for covariates and confounding, and implemented inverse probability weighting (IPW) to address imbalance across ranks and gender. Our findings indicate systemic disparities in disciplinary outcomes by rank, underscoring the importance of accounting for structural factors in police accountability research.
 
 For further details, refer to the respective Jupyter notebooks and CPD Final Report.pdf
-
